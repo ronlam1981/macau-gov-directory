@@ -151,7 +151,7 @@ if [ -z "$REMOTE_URL" ]; then
     [ -f "updatedata.command" ] && git add updatedata.command
     [ -f "更新程序.py" ] && git add "更新程序.py"
     [ -f "更新程序.command" ] && git add "更新程序.command"
-    [ -f "發佈更新.command" ] && git add "發佈更新.command"
+    [ -f "發佈更新到GitHub.command" ] && git add "發佈更新到GitHub.command"
     [ -d "Rawdata" ] && git add Rawdata/
     [ -d ".github" ] && git add .github/
 
@@ -253,7 +253,7 @@ echo ""
 # Stage 變更的檔案
 git add index.html 2>/dev/null
 git add Rawdata/ 2>/dev/null
-git add "發佈更新.command" 2>/dev/null
+git add "發佈更新到GitHub.command" 2>/dev/null
 git add updatedata.py updatedata.command 2>/dev/null
 git add "更新程序.py" "更新程序.command" 2>/dev/null
 git add .github/ 2>/dev/null
