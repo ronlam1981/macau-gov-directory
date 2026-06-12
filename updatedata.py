@@ -142,13 +142,21 @@ def extract_old_data(html):
         return None, []
     old_block = m.group(0)
     entries = []
-    for match in re.finditer(r'\{n:"([^"]*)".*?L:\[(.*?)\]\}', old_block):
-        name = match.group(1)
-        leaders_str = match.group(2)
+    pattern = r'\{n:"([^"\\]*(?:\\.[^"\\]*)*)",c:"([^"\\]*(?:\\.[^"\\]*)*)",ph:"([^"\\]*(?:\\.[^"\\]*)*)",fx:"([^"\\]*(?:\\.[^"\\]*)*)",em:"([^"\\]*(?:\\.[^"\\]*)*)",ad:"([^"\\]*(?:\\.[^"\\]*)*)",w:"([^"\\]*(?:\\.[^"\\]*)*)",L:\[(.*?)\]\}'
+    for match in re.finditer(pattern, old_block):
         leaders = []
-        for lm in re.finditer(r'\{r:"([^"]*)",p:"([^"]*)"\}', leaders_str):
+        for lm in re.finditer(r'\{r:"([^"]*)",p:"([^"]*)"\}', match.group(8)):
             leaders.append({"r": lm.group(1), "p": lm.group(2)})
-        entries.append({"n": name, "L": leaders})
+        entries.append({
+            "n": match.group(1),
+            "c": match.group(2),
+            "ph": match.group(3),
+            "fx": match.group(4),
+            "em": match.group(5),
+            "ad": match.group(6),
+            "w": match.group(7),
+            "L": leaders
+        })
     return old_block, entries
 
 def compare_data(old_entries, new_entries):
@@ -159,17 +167,32 @@ def compare_data(old_entries, new_entries):
     removed = [n for n in old_map if n not in new_map]
 
     leader_changes = []
+    detail_changes = []
+    field_labels = {"c": "類別", "ph": "電話", "fx": "傳真", "em": "電郵", "ad": "地址", "w": "網址"}
+
     for name in new_map:
         if name not in old_map:
             continue
-        old_leaders = {(l["r"], l["p"]) for l in old_map[name].get("L", [])}
-        new_leaders = {(l["r"], l["p"]) for l in new_map[name].get("L", [])}
+        old_e = old_map[name]
+        new_e = new_map[name]
+
+        old_leaders = {(l["r"], l["p"]) for l in old_e.get("L", [])}
+        new_leaders = {(l["r"], l["p"]) for l in new_e.get("L", [])}
         if old_leaders != new_leaders:
             removed_l = old_leaders - new_leaders
             added_l = new_leaders - old_leaders
             leader_changes.append({"name": name, "removed": removed_l, "added": added_l})
 
-    return added, removed, leader_changes
+        changed_fields = []
+        for field, label in field_labels.items():
+            old_val = old_e.get(field, "")
+            new_val = js_escape(new_e.get(field, ""))
+            if old_val != new_val:
+                changed_fields.append(label)
+        if changed_fields:
+            detail_changes.append({"name": name, "fields": changed_fields})
+
+    return added, removed, leader_changes, detail_changes
 
 def main():
     print("=" * 60)
@@ -206,13 +229,15 @@ def main():
         old_leader_count = sum(len(e["L"]) for e in old_entries)
         print(f"   現有資料：{len(old_entries)} 個部門/機構，{old_leader_count} 條領導人記錄")
 
-    # 4. Compare
-    if old_entries:
-        added, removed, leader_changes = compare_data(old_entries, new_entries)
+    # 4. Compare — 以完整資料對比，不只比較數目
+    new_js = entries_to_js(new_entries)
 
-        if not added and not removed and not leader_changes:
-            print("\n✅ 線上資料與現有資料完全一致，無需更新。")
-            return
+    if old_block and new_js == old_block:
+        print("\n✅ 線上資料與現有資料完全一致，無需更新。")
+        return
+
+    if old_entries:
+        added, removed, leader_changes, detail_changes = compare_data(old_entries, new_entries)
 
         print("\n" + "─" * 60)
         print("  📋 變更摘要")
@@ -237,8 +262,14 @@ def main():
                 for r, p in ch["added"]:
                     print(f"        + {r}：{p}")
 
+        if detail_changes:
+            print(f"\n  📝 {len(detail_changes)} 個部門其他資料變更：")
+            for ch in detail_changes:
+                fields_str = "、".join(ch["fields"])
+                print(f"     📌 {ch['name']}（{fields_str}）")
+
         print("\n" + "─" * 60)
-        total_changes = len(added) + len(removed) + len(leader_changes)
+        total_changes = len(added) + len(removed) + len(leader_changes) + len(detail_changes)
         print(f"  共 {total_changes} 項變更")
         print("─" * 60)
     else:
@@ -260,8 +291,7 @@ def main():
             f.write(comm_bytes)
         print(f"   💾 已儲存：{EXCEL_COMM}")
 
-    # 7. Generate new JS and update HTML
-    new_js = entries_to_js(new_entries)
+    # 7. Update HTML (new_js already generated in step 4)
     today = date.today().isoformat()
 
     if old_block:
