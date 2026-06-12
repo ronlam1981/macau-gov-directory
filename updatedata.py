@@ -6,13 +6,14 @@
 """
 import pandas as pd
 import re, os, sys, tempfile, shutil
-from datetime import date
+from datetime import datetime, date
 from urllib.request import urlopen, Request
 from io import BytesIO
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 HTML_FILE = os.path.join(SCRIPT_DIR, "index.html")
 RAWDATA_DIR = os.path.join(SCRIPT_DIR, "Rawdata")
+CHANGELOG_FILE = os.path.join(SCRIPT_DIR, "CHANGELOG.md")
 EXCEL_MAIN = os.path.join(RAWDATA_DIR, "msar-apm-entities-contact-zh.xlsx")
 EXCEL_COMM = os.path.join(RAWDATA_DIR, "comissoes.xlsx")
 
@@ -125,6 +126,31 @@ def read_excel_data(main_bytes=None, comm_bytes=None):
 
     return entries
 
+def dedup_entries(entries):
+    """合併重複條目：如「XX司」和「XX司司長辦公室」資料相同，保留短名稱"""
+    name_map = {e["n"]: e for e in entries}
+    to_remove = set()
+    suffixes = ["司長辦公室", "辦公室"]
+
+    for e in entries:
+        for suffix in suffixes:
+            longer_name = e["n"] + suffix
+            if longer_name not in name_map:
+                continue
+            longer = name_map[longer_name]
+            short_persons = {l["p"] for l in e["L"]}
+            long_persons = {l["p"] for l in longer["L"]}
+            if short_persons and short_persons == long_persons:
+                to_remove.add(longer_name)
+
+    if to_remove:
+        entries = [e for e in entries if e["n"] not in to_remove]
+        print(f"   🔄 已合併 {len(to_remove)} 個重複條目：")
+        for n in sorted(to_remove):
+            print(f"      - {n}")
+
+    return entries
+
 def entries_to_js(entries):
     js_lines = []
     for e in entries:
@@ -194,6 +220,81 @@ def compare_data(old_entries, new_entries):
 
     return added, removed, leader_changes, detail_changes
 
+def get_last_update_time():
+    """從 CHANGELOG.md 讀取上次更新時間"""
+    if not os.path.exists(CHANGELOG_FILE):
+        return None
+    with open(CHANGELOG_FILE, "r", encoding="utf-8") as f:
+        for line in f:
+            m = re.match(r'^## (\d{4}-\d{2}-\d{2} \d{2}:\d{2})', line)
+            if m:
+                return m.group(1)
+    return None
+
+def write_changelog(now_str, last_str, added, removed, leader_changes, detail_changes, total_depts, total_leaders):
+    """將更新摘要寫入 CHANGELOG.md（新記錄插在最前面）"""
+    entry_lines = []
+    entry_lines.append(f"## {now_str}")
+    entry_lines.append("")
+    if last_str:
+        entry_lines.append(f"上次更新：{last_str}")
+    else:
+        entry_lines.append("上次更新：（首次記錄）")
+    entry_lines.append(f"本次更新：{now_str}")
+    entry_lines.append(f"部門/機構：{total_depts}　領導人記錄：{total_leaders}")
+    entry_lines.append("")
+
+    total = len(added) + len(removed) + len(leader_changes) + len(detail_changes)
+    entry_lines.append(f"### 變更摘要（共 {total} 項）")
+    entry_lines.append("")
+
+    if added:
+        entry_lines.append(f"**新增 {len(added)} 個部門/機構：**")
+        for n in added:
+            entry_lines.append(f"- + {n}")
+        entry_lines.append("")
+
+    if removed:
+        entry_lines.append(f"**移除 {len(removed)} 個部門/機構：**")
+        for n in removed:
+            entry_lines.append(f"- - {n}")
+        entry_lines.append("")
+
+    if leader_changes:
+        entry_lines.append(f"**{len(leader_changes)} 個部門領導人變更：**")
+        for ch in leader_changes:
+            entry_lines.append(f"- **{ch['name']}**")
+            for r, p in ch["removed"]:
+                entry_lines.append(f"  - 移除：{r}：{p}")
+            for r, p in ch["added"]:
+                entry_lines.append(f"  - 新增：{r}：{p}")
+        entry_lines.append("")
+
+    if detail_changes:
+        entry_lines.append(f"**{len(detail_changes)} 個部門其他資料變更：**")
+        for ch in detail_changes:
+            fields_str = "、".join(ch["fields"])
+            entry_lines.append(f"- {ch['name']}（{fields_str}）")
+        entry_lines.append("")
+
+    entry_lines.append("---")
+    entry_lines.append("")
+    new_entry = "\n".join(entry_lines)
+
+    header = "# 澳門政府部門通訊錄 — 更新記錄\n\n"
+    if os.path.exists(CHANGELOG_FILE):
+        with open(CHANGELOG_FILE, "r", encoding="utf-8") as f:
+            content = f.read()
+        if content.startswith("# "):
+            first_nl = content.index("\n\n") + 2 if "\n\n" in content else len(content)
+            content = content[first_nl:]
+        content = new_entry + content
+    else:
+        content = new_entry
+
+    with open(CHANGELOG_FILE, "w", encoding="utf-8") as f:
+        f.write(header + content)
+
 def main():
     print("=" * 60)
     print("  澳門政府部門通訊錄 - 一鍵更新工具")
@@ -208,11 +309,13 @@ def main():
         print("\n❌ 主檔案下載失敗，無法繼續。")
         sys.exit(1)
 
-    # 2. Parse new data
+    # 2. Parse new data + dedup
     print("\n📖 解析下載資料...")
     new_entries = read_excel_data(main_bytes, comm_bytes)
+    print(f"   原始資料：{len(new_entries)} 個部門/機構")
+    new_entries = dedup_entries(new_entries)
     new_leader_count = sum(len(e["L"]) for e in new_entries)
-    print(f"   線上資料：{len(new_entries)} 個部門/機構，{new_leader_count} 條領導人記錄")
+    print(f"   處理後：{len(new_entries)} 個部門/機構，{new_leader_count} 條領導人記錄")
 
     # 3. Read old data from HTML
     if not os.path.exists(HTML_FILE):
@@ -285,6 +388,13 @@ def main():
             f.write(comm_bytes)
         print(f"   💾 已儲存：{EXCEL_COMM}")
 
+    # 6. Write changelog
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+    last_str = get_last_update_time()
+    if old_entries:
+        write_changelog(now_str, last_str, added, removed, leader_changes, detail_changes, len(new_entries), new_leader_count)
+        print(f"   📋 更新記錄已寫入：{CHANGELOG_FILE}")
+
     # 7. Update HTML (new_js already generated in step 4)
     today = date.today().isoformat()
 
@@ -302,15 +412,10 @@ def main():
     with open(HTML_FILE, "w", encoding="utf-8") as f:
         f.write(html)
 
-    tmp_copy = "/tmp/macau-dir/index.html"
-    if os.path.exists(os.path.dirname(tmp_copy)):
-        with open(tmp_copy, "w", encoding="utf-8") as f:
-            f.write(html)
-
     print(f"\n✅ 更新完成！")
     print(f"   部門/機構：{len(new_entries)}")
     print(f"   領導人記錄：{new_leader_count}")
-    print(f"   更新日期：{today}")
+    print(f"   更新日期：{now_str}")
     print(f"   檔案：{HTML_FILE}")
 
 if __name__ == "__main__":

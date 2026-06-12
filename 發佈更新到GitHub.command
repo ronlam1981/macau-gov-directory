@@ -247,6 +247,8 @@ echo ""
 # Stage 變更的檔案
 git add index.html 2>/dev/null
 git add Rawdata/ 2>/dev/null
+git add CHANGELOG.md 2>/dev/null
+git add README.md 2>/dev/null
 git add "發佈更新到GitHub.command" 2>/dev/null
 git add updatedata.py 2>/dev/null
 git add .github/ 2>/dev/null
