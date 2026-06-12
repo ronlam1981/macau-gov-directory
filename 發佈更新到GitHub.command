@@ -45,8 +45,10 @@ fi
 GH_CMD=""
 if command -v gh &> /dev/null; then
     GH_CMD="gh"
-elif [ -f "/tmp/gh_extract/gh_2.88.1_macOS_amd64/bin/gh" ]; then
-    GH_CMD="/tmp/gh_extract/gh_2.88.1_macOS_amd64/bin/gh"
+else
+    for d in /tmp/gh_extract/gh_*/bin/gh; do
+        [ -f "$d" ] && GH_CMD="$d" && break
+    done
 fi
 
 # ─── 步驟 1：更新資料 ────────────────────────────
