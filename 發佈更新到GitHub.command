@@ -65,16 +65,11 @@ fi
 
 if [ $UPDATE_RESULT -ne 0 ]; then
     echo ""
-    echo "⚠️  資料更新步驟失敗或取消。"
+    echo "❌ 資料更新失敗，已中止。"
     echo ""
-    read -p "是否繼續發佈現有版本到 GitHub Pages？(y/n): " CONTINUE
-    if [[ "$CONTINUE" != "y" && "$CONTINUE" != "Y" && "$CONTINUE" != "" ]]; then
-        echo "❌ 已取消。"
-        echo ""
-        echo "按任意鍵關閉..."
-        read -n 1
-        exit 1
-    fi
+    echo "按任意鍵關閉..."
+    read -n 1
+    exit 1
 fi
 
 # ─── 步驟 2：初始化 Git（首次使用）──────────────────
@@ -148,9 +143,6 @@ if [ -z "$REMOTE_URL" ]; then
     # Stage 所有需要的檔案
     git add index.html
     [ -f "updatedata.py" ] && git add updatedata.py
-    [ -f "updatedata.command" ] && git add updatedata.command
-    [ -f "更新程序.py" ] && git add "更新程序.py"
-    [ -f "更新程序.command" ] && git add "更新程序.command"
     [ -f "發佈更新到GitHub.command" ] && git add "發佈更新到GitHub.command"
     [ -d "Rawdata" ] && git add Rawdata/
     [ -d ".github" ] && git add .github/
@@ -254,8 +246,7 @@ echo ""
 git add index.html 2>/dev/null
 git add Rawdata/ 2>/dev/null
 git add "發佈更新到GitHub.command" 2>/dev/null
-git add updatedata.py updatedata.command 2>/dev/null
-git add "更新程序.py" "更新程序.command" 2>/dev/null
+git add updatedata.py 2>/dev/null
 git add .github/ 2>/dev/null
 
 # 檢查是否有變更

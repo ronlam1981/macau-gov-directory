@@ -275,13 +275,7 @@ def main():
     else:
         print("\n⚠️  無舊資料可對比，將直接寫入")
 
-    # 5. Ask for confirmation
-    reply = input("\n是否確認更新？(y/n): ").strip().lower()
-    if reply not in ('y', 'yes', ''):
-        print("❌ 已取消更新。")
-        return
-
-    # 6. Save downloaded files to Rawdata/
+    # 5. Save downloaded files to Rawdata/
     os.makedirs(RAWDATA_DIR, exist_ok=True)
     with open(EXCEL_MAIN, "wb") as f:
         f.write(main_bytes)
