@@ -60,7 +60,7 @@ function onOpen() {
     .addItem("🗑️ 取消自動更新", "removeTriggers")
     .addSeparator()
     .addItem("📈 重新計算分析報告", "calculateAnalysis")
-    .addItem("📧 發送數據摘要郵件", "sendEmailReport")
+    .addItem("📋 顯示數據摘要", "showSummaryReport")
     .addSeparator()
     .addItem("🏗️ 初始化工作表結構", "initializeSheets")
     .addToUi();
@@ -121,7 +121,7 @@ function updateLatest() {
 function monthlyAutoUpdate_() {
   try {
     updateLatest();
-    sendEmailReport();
+    log_("✅ 每月自動更新完成");
   } catch (e) {
     log_("❌ 自動更新失敗：" + e.message);
   }
@@ -561,59 +561,30 @@ function removeTriggers() {
 
 
 // ════════════════════════════════════════════════════════
-// 電郵報告
+// 數據摘要（彈出視窗顯示，不需要郵件權限）
 // ════════════════════════════════════════════════════════
-function sendEmailReport() {
+function showSummaryReport() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sws = ss.getSheetByName(CFG.SUMMARY_SHEET);
-  if (!sws || sws.getLastRow() < 2) return;
-
+  if (!sws || sws.getLastRow() < 2) {
+    SpreadsheetApp.getUi().alert("尚無數據，請先執行「更新最新數據」。");
+    return;
+  }
   const data = sws.getRange(2, 1, sws.getLastRow() - 1, 4).getValues();
   const latest = data[data.length - 1];
   const prev   = data[data.length - 2];
+  const yoy    = latest[2] != null ? (latest[2] >= 0 ? "+" : "") + latest[2] + "%" : "N/A";
+  const msg =
+    `📊 澳門博彩統計摘要\n\n` +
+    `${latest[0]} 年全年毛收入：${Number(latest[1]).toLocaleString()} 百萬 MOP\n` +
+    `較 ${prev[0]} 年：${yoy}\n\n` +
+    `${prev[0]} 年全年毛收入：${Number(prev[1]).toLocaleString()} 百萬 MOP`;
+  SpreadsheetApp.getUi().alert(msg);
+}
 
-  const email = Session.getActiveUser().getEmail();
-  const dateStr = new Date().toLocaleDateString("zh-TW");
-
-  const html = `
-<div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
-<h2 style="color:#1F4E79;">📊 澳門 DICJ 博彩統計報告 — ${dateStr}</h2>
-<table style="border-collapse:collapse;width:100%;">
-  <tr style="background:#1F4E79;color:#fff;">
-    <th style="padding:10px 16px;text-align:left;">指標</th>
-    <th style="padding:10px 16px;text-align:right;">數值</th>
-  </tr>
-  <tr style="background:#f0f4f8;">
-    <td style="padding:8px 16px;">最新年度（${latest[0]}年）全年毛收入</td>
-    <td style="padding:8px 16px;text-align:right;font-weight:bold;">${Number(latest[1]).toLocaleString()} 百萬 MOP</td>
-  </tr>
-  <tr>
-    <td style="padding:8px 16px;">較上年（${prev[0]}年）增減</td>
-    <td style="padding:8px 16px;text-align:right;color:${latest[2]>=0?'#0D9B6A':'#C23232'};font-weight:bold;">
-      ${latest[2]!=null ? (latest[2]>=0?'+':'')+latest[2]+'%' : 'N/A'}
-    </td>
-  </tr>
-  <tr style="background:#f0f4f8;">
-    <td style="padding:8px 16px;">上年（${prev[0]}年）全年毛收入</td>
-    <td style="padding:8px 16px;text-align:right;">${Number(prev[1]).toLocaleString()} 百萬 MOP</td>
-  </tr>
-</table>
-<p style="margin-top:24px;">
-  <a href="${ss.getUrl()}" style="background:#1F4E79;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none;">
-    查看完整試算表 →
-  </a>
-</p>
-<p style="color:#888;font-size:12px;margin-top:24px;">
-  由澳門 DICJ 博彩統計自動系統生成 · ${dateStr}
-</p>
-</div>`;
-
-  MailApp.sendEmail({
-    to: email,
-    subject: `澳門 DICJ 博彩統計報告 — ${dateStr}`,
-    htmlBody: html,
-  });
-  log_(`📧 報告已發送至 ${email}`);
+// 保留舊名稱相容性（空函式，不需要郵件權限）
+function sendEmailReport() {
+  showSummaryReport();
 }
 
 
