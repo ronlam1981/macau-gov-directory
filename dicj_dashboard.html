@@ -1,0 +1,1248 @@
+<title>澳門博彩統計</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600&family=Noto+Sans+TC:wght@300;400;500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+
+<style>
+:root {
+  --bg-page:    #071322;
+  --bg-surf:    #0C1D36;
+  --bg-card:    #122040;
+  --bg-hover:   #1A2D54;
+  --border:     #1C3358;
+  --border-sub: #112A4A;
+  --gold:       #C9A227;
+  --gold-dim:   #7D6118;
+  --teal:       #27B0A8;
+  --blue:       #4190D9;
+  --red:        #D95555;
+  --green:      #3BB87A;
+  --purple:     #9370D4;
+  --orange:     #E08842;
+  --pink:       #E04A8A;
+  --amber:      #CC7722;
+  --txt-hi:     #D5E6F5;
+  --txt-mid:    #7498BE;
+  --txt-lo:     #3A5574;
+  --tab-act:    #C9A227;
+  --tab-inact:  #3A5574;
+  --est-color:  #CC7722;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg-page);
+  color: var(--txt-hi);
+  font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  padding-inline: 16px;
+  padding-block: 12px 32px;
+  min-width: 320px;
+}
+.page-header {
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  padding-block: 16px 8px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
+}
+.page-header h1 { font-family:'Noto Serif TC','宋體',serif; font-size:22px; font-weight:600; color:var(--gold); margin:0; letter-spacing:.03em; }
+.page-header .subtitle { font-size:12px; color:var(--txt-mid); letter-spacing:.05em; text-transform:uppercase; }
+.page-header .updated  { margin-left:auto; font-size:11px; color:var(--txt-lo); font-variant-numeric:tabular-nums; }
+.tab-nav { display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:20px; overflow-x:auto; scrollbar-width:none; }
+.tab-nav::-webkit-scrollbar { display:none; }
+.tab-btn { background:none; border:none; border-bottom:2px solid transparent; color:var(--tab-inact); cursor:pointer; font-family:inherit; font-size:13px; letter-spacing:.04em; padding:8px 16px; white-space:nowrap; transition:color .15s,border-color .15s; margin-bottom:-1px; }
+.tab-btn:hover { color:var(--txt-hi); }
+.tab-btn.active { color:var(--tab-act); border-bottom-color:var(--tab-act); }
+.tab-btn:focus-visible { outline:2px solid var(--gold); outline-offset:-2px; border-radius:3px 3px 0 0; }
+.panel { display:none; }
+.panel.active { display:block; }
+
+/* KPI */
+.kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+@media(max-width:700px){ .kpi-grid{grid-template-columns:repeat(2,1fr);} }
+@media(max-width:420px){ .kpi-grid{grid-template-columns:1fr;} }
+.kpi { background:var(--bg-card); border:1px solid var(--border); border-radius:6px; padding:14px 16px; }
+.kpi .label { font-size:11px; color:var(--txt-lo); letter-spacing:.07em; text-transform:uppercase; margin-bottom:4px; display:flex; align-items:center; gap:4px; }
+.kpi .value { font-size:22px; font-weight:500; color:var(--txt-hi); font-variant-numeric:tabular-nums; line-height:1.1; }
+.kpi .value span { font-size:13px; color:var(--txt-mid); }
+.kpi .delta { font-size:12px; margin-top:5px; font-variant-numeric:tabular-nums; }
+.kpi .kpi-note { font-size:10px; color:var(--txt-lo); margin-top:4px; line-height:1.4; }
+.delta.up   { color:var(--green); }
+.delta.down { color:var(--red); }
+.delta.neu  { color:var(--txt-mid); }
+
+/* Chart cards */
+.chart-card { background:var(--bg-card); border:1px solid var(--border); border-radius:6px; padding:16px; margin-bottom:16px; }
+.chart-card h2 { font-size:13px; font-weight:500; color:var(--txt-mid); letter-spacing:.05em; text-transform:uppercase; margin:0 0 14px; }
+.chart-card .note { font-size:11px; color:var(--txt-lo); margin-top:8px; line-height:1.6; }
+.chart-row { display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:16px; align-items:start; }
+@media(max-width:640px){ .chart-row{grid-template-columns:1fr;} }
+
+/* Estimate badge */
+.est-badge { display:inline-block; font-size:9px; color:var(--est-color); border:1px solid var(--est-color); border-radius:2px; padding:1px 4px; vertical-align:middle; letter-spacing:.03em; margin-left:4px; }
+
+/* Year filter */
+.year-filter { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+.yr-btn { background:var(--bg-surf); border:1px solid var(--border); border-radius:3px; color:var(--txt-mid); cursor:pointer; font-family:inherit; font-size:12px; padding:4px 10px; transition:all .12s; font-variant-numeric:tabular-nums; }
+.yr-btn:hover { border-color:var(--txt-mid); color:var(--txt-hi); }
+.yr-btn.sel { background:var(--bg-hover); border-color:var(--blue); color:var(--txt-hi); }
+.yr-btn.est-yr { border-color:var(--est-color); }
+.yr-btn.est-yr.sel { background:var(--bg-hover); border-color:var(--est-color); color:var(--est-color); }
+.yr-btn:focus-visible { outline:2px solid var(--gold); }
+
+/* Heatmap */
+#heatmapCanvas { width:100%; max-width:100%; border-radius:4px; display:block; }
+.legend-row { display:flex; flex-wrap:wrap; gap:12px; margin-top:10px; }
+.legend-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--txt-mid); }
+.legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.legend-bar { width:22px; height:3px; border-radius:2px; flex-shrink:0; }
+
+/* Forecast table */
+.fc-table { width:100%; border-collapse:collapse; font-size:13px; font-variant-numeric:tabular-nums; margin-top:14px; }
+.fc-table th { text-align:left; color:var(--txt-lo); font-size:11px; letter-spacing:.05em; text-transform:uppercase; padding:6px 10px; border-bottom:1px solid var(--border); }
+.fc-table td { padding:8px 10px; border-bottom:1px solid var(--border-sub); color:var(--txt-hi); }
+.fc-table .fc-row td:first-child { color:var(--gold); font-weight:500; }
+.fc-table tr:last-child td { border-bottom:none; }
+
+/* Seasonal grid */
+.seas-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:12px; }
+@media(max-width:500px){ .seas-grid{grid-template-columns:repeat(2,1fr);} }
+.seas-cell { background:var(--bg-surf); border:1px solid var(--border-sub); border-radius:4px; padding:8px; text-align:center; }
+.seas-cell .s-month { font-size:11px; color:var(--txt-lo); }
+.seas-cell .s-idx { font-size:17px; font-weight:500; font-variant-numeric:tabular-nums; margin-top:2px; }
+.s-idx.high { color:var(--gold); }
+.s-idx.med  { color:var(--teal); }
+.s-idx.low  { color:var(--txt-mid); }
+
+/* Methodology */
+.method-box { background:var(--bg-surf); border:1px solid var(--border-sub); border-radius:6px; padding:16px; margin-top:16px; }
+.method-box h3 { font-size:12px; color:var(--gold); letter-spacing:.05em; text-transform:uppercase; margin:0 0 12px; }
+.method-item { margin-bottom:12px; }
+.method-item:last-child { margin-bottom:0; }
+.method-item .m-title { font-size:12px; color:var(--teal); font-weight:500; margin-bottom:3px; }
+.method-item .m-body { font-size:12px; color:var(--txt-mid); line-height:1.6; }
+.method-item .m-formula { font-family:monospace; font-size:11px; background:var(--bg-card); border:1px solid var(--border); border-radius:3px; padding:6px 10px; color:var(--txt-hi); margin-top:6px; display:block; }
+</style>
+
+<!-- HEADER -->
+<header class="page-header">
+  <h1>澳門博彩統計</h1>
+  <span class="subtitle">DICJ 幸運博彩毛收入分析</span>
+  <span class="updated">DICJ 實際數據至2026年8月 · 單位：億澳門元</span>
+</header>
+
+<!-- TAB NAV -->
+<nav class="tab-nav" role="tablist">
+  <button class="tab-btn active" role="tab" data-panel="overview"  aria-selected="true">概覽</button>
+  <button class="tab-btn"        role="tab" data-panel="monthly"   aria-selected="false">月份趨勢</button>
+  <button class="tab-btn"        role="tab" data-panel="quarterly" aria-selected="false">季度分析</button>
+  <button class="tab-btn"        role="tab" data-panel="forecast"  aria-selected="false">趨勢預測</button>
+  <button class="tab-btn"        role="tab" data-panel="alldata"   aria-selected="false">歷年資料</button>
+  <button class="tab-btn"        role="tab" data-panel="method"    aria-selected="false">數據說明</button>
+</nav>
+
+<!-- TAB 1: OVERVIEW -->
+<div id="overview" class="panel active" role="tabpanel">
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="label">最新月份 (2026年8月)</div>
+      <div class="value">218.9 <span>億澳門元</span></div>
+      <div class="delta down">▼ -1.2% 較2025年8月</div>
+      <p class="kpi-note">幸運博彩毛收入（GGR）= 賭客下注總額 − 派彩，反映博彩業整體規模</p>
+    </div>
+    <div class="kpi">
+      <div class="label">2026年累計（至8月）</div>
+      <div class="value">1,690.5 <span>億澳門元</span></div>
+      <div class="delta up">▲ +3.7% 較2025年同期</div>
+      <p class="kpi-note">Year-to-Date（YTD）= 本年1至8月毛收入合計，作同期比較用</p>
+    </div>
+    <div class="kpi">
+      <div class="label">2025年全年</div>
+      <div class="value">2,474.0 <span>億澳門元</span></div>
+      <div class="delta up">▲ +9.1% 較2024年</div>
+      <p class="kpi-note">DICJ 公報全年12個月實際數字（2025年1–12月全部確認）</p>
+    </div>
+    <div class="kpi">
+      <div class="label">歷史高峰 (2013年)</div>
+      <div class="value">3,607.4 <span>億澳門元</span></div>
+      <div class="delta neu">2026年1–8月恢復至 46.9%</div>
+      <p class="kpi-note">2013年為DICJ有記錄以來最高峰；恢復率 = 當年全年GGR ÷ 2013年峰值 × 100%</p>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <h2>年度幸運博彩毛收入 (2002–2026) · 億澳門元</h2>
+    <div style="position:relative;height:300px;max-height:300px">
+      <canvas id="annualChart" style="max-width:100%;height:100%"></canvas>
+    </div>
+    <p class="note">
+      ● 藍色：正常年份 ● 紅色：疫情受影響年份 (2020–2022) ● 翠綠：歷史峰值年份 (2013) ● 橙色：帶有估計成分的年份<br>
+      2025年全年實際數據（DICJ 12月確認）；2026年僅1–8月實際數據（橙色 = 未完整全年）；2013年峰值 3,607億 = 歷史最高<br>
+      數據來源：澳門博彩監察協調局 (DICJ) 官方年度統計公報
+    </p>
+  </div>
+
+  <div class="chart-card">
+    <h2>任意12個月收入比較 · 億澳門元</h2>
+    <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <span style="font-size:11px;color:var(--txt-lo);padding-top:5px;flex-shrink:0">主要期間：</span>
+      <div class="year-filter" id="mainPeriodFilter" style="margin:0;gap:4px;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap;max-width:calc(100% - 70px)"></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <span style="font-size:11px;color:var(--txt-lo);padding-top:5px;flex-shrink:0">同比對比：</span>
+      <div class="year-filter" id="cmpPeriodFilter" style="margin:0;gap:4px;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap;max-width:calc(100% - 70px)"></div>
+    </div>
+    <div style="position:relative;height:240px">
+      <canvas id="monthly2026Chart" style="max-width:100%;height:100%"></canvas>
+    </div>
+    <div class="legend-row" style="margin-top:8px">
+      <div class="legend-item"><span class="legend-dot" style="background:#4190D9"></span><span id="main-legend-text"></span></div>
+      <div class="legend-item" id="yoy-legend" hidden><span class="legend-dot" style="background:#3BB87A"></span><span id="yoy-legend-text"></span></div>
+    </div>
+    <p class="note" id="trailing12Note">數據來源：DICJ 官方月度統計公報；2026年9–12月待發佈</p>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-card" style="margin-bottom:0">
+      <h2>博彩項目佔比 · 2025年Q1</h2>
+      <div style="position:relative;height:200px;display:flex;align-items:center;justify-content:center">
+        <canvas id="donutChart" style="max-width:100%;max-height:100%"></canvas>
+      </div>
+      <p class="note">百家樂佔合計收入逾84%；大眾廳佔比持續高於貴賓廳</p>
+    </div>
+    <div class="chart-card" style="margin-bottom:0">
+      <h2>2026年月份同比 (vs 2025)</h2>
+      <div style="position:relative;height:200px">
+        <canvas id="yoyBarChart" style="max-width:100%;height:100%"></canvas>
+      </div>
+      <p class="note">2026年1–8月每月 vs 2025年同月變動率</p>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2: MONTHLY TRENDS -->
+<div id="monthly" class="panel" role="tabpanel">
+  <div class="chart-card">
+    <h2>多年月份收入趨勢對比 · 億澳門元</h2>
+    <div class="year-filter" id="yearFilter"></div>
+    <div style="position:relative;height:320px">
+      <canvas id="trendChart" style="max-width:100%;height:100%"></canvas>
+    </div>
+    <div class="legend-row" id="trendLegend"></div>
+    <p class="note">2026年1–8月為 DICJ 實際數據，9–12月待公布；紅色虛線（2020–2022）= 受疫情影響期間；點擊上方年份按鈕顯示/隱藏</p>
+  </div>
+  <div class="chart-card">
+    <h2>月份熱力圖 — 年度 × 月份 · 億澳門元</h2>
+    <canvas id="heatmapCanvas" height="240"></canvas>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11px;color:var(--txt-lo)">
+      <span>低收入</span>
+      <canvas id="legendBar" width="180" height="12" style="border-radius:2px"></canvas>
+      <span>高收入</span>
+    </div>
+    <p class="note">顏色由深藍→青綠→金色表示收入由低到高；格內數字為四捨五入的億數；2026年9–12月待 DICJ 公布</p>
+  </div>
+</div>
+
+<!-- TAB 3: QUARTERLY ANALYSIS -->
+<div id="quarterly" class="panel" role="tabpanel">
+  <div class="chart-card">
+    <h2>VIP廳 vs 大眾廳 收入對比 · 億澳門元</h2>
+    <div style="position:relative;height:290px">
+      <canvas id="vipMassChart" style="max-width:100%;height:100%"></canvas>
+    </div>
+    <p class="note">貴賓廳：高額投注客（junket中介為主），受反腐政策影響明顯；大眾廳：散客直接投注，近年佔比持續提升至60%以上</p>
+  </div>
+  <div class="chart-card">
+    <h2>各博彩項目收入 — 2025年Q1 · 億澳門元</h2>
+    <div style="position:relative;height:310px">
+      <canvas id="gameBarChart" style="max-width:100%;height:100%"></canvas>
+    </div>
+    <p class="note">合計576.6億澳門元；百家樂（貴賓廳+大眾廳）佔84.5%；角子機（老虎機）佔5.6%；其餘各類桌面博彩佔9.9%<br>數據來源：DICJ 2025年第一季博彩統計公報</p>
+  </div>
+</div>
+
+<!-- TAB 4: FORECAST -->
+<div id="forecast" class="panel" role="tabpanel">
+  <div class="chart-card">
+    <h2>近12個月走勢（2025年9月—2026年8月實際）+ 未來3個月預測 (2026年9–11月) · 億澳門元</h2>
+    <div style="position:relative;height:320px">
+      <canvas id="forecastChart" style="max-width:100%;height:100%"></canvas>
+    </div>
+    <div class="legend-row" style="margin-top:10px">
+      <div class="legend-item"><span class="legend-bar" style="background:var(--blue)"></span>實際收入（DICJ公報，2025年9月–2026年8月全部確認）</div>
+      <div class="legend-item"><span class="legend-bar" style="background:var(--gold);border:1px dashed"></span>預測值（2026年9–11月）</div>
+      <div class="legend-item"><span class="legend-bar" style="background:rgba(201,162,39,0.25)"></span>±10% 預測區間</div>
+    </div>
+    <table class="fc-table" id="forecastTable"></table>
+    <p class="note">
+      預測基礎：以2024–2025年全年 + 2026年1–8月實際數據（共32個數據點）進行線性回歸，再乘以季節指數修正<br>
+      季節指數 = 各月份2024–2025年平均值 ÷ 全年月均值<br>
+      ±10%置信帶 = 預測值乘以0.9及1.1，反映短期不確定性
+    </p>
+  </div>
+  <div class="chart-card">
+    <h2>月份季節指數（基於2023–2024年實際數據）</h2>
+    <p style="font-size:12px;color:var(--txt-mid);margin:0 0 4px">指數 &gt; 1.0（金色）= 高於年度月均；指數 &lt; 0.95（灰色）= 低於年度月均</p>
+    <div class="seas-grid" id="seasGrid"></div>
+    <p class="note" style="margin-top:10px">計算方式：季節指數 = 各月份兩年平均 GGR ÷ 全年12個月平均 GGR；10月份指數最高，反映黃金週假期效應；1–2月因受農曆新年影響時間不固定，指數較低</p>
+  </div>
+</div>
+
+<!-- TAB 5: METHODOLOGY -->
+<div id="method" class="panel" role="tabpanel">
+  <div class="chart-card">
+    <h2>數據來源</h2>
+    <div class="method-box" style="margin-top:0">
+      <div class="method-item">
+        <div class="m-title">主要數據來源</div>
+        <div class="m-body">澳門博彩監察協調局（Direcção de Inspecção e Coordenação de Jogos，簡稱 DICJ）官方統計公報，網址：www.dicj.gov.mo。DICJ 每月初公佈上月幸運博彩毛收入及年度累計數字；每季公佈各博彩項目詳細統計。</div>
+      </div>
+      <div class="method-item">
+        <div class="m-title">數據狀態</div>
+        <div class="m-body">
+          ● <strong style="color:var(--blue)">藍色 / 實線</strong>：DICJ 官方公報已確認數字（2002–2026年8月全部為實際數據）<br>
+          ● <strong style="color:var(--amber)">橙色 / 部分年份</strong>：2026年僅1–8月已發佈，9–12月待 DICJ 公布<br>
+          ● <strong style="color:var(--gold)">金色 / 預測</strong>：線性回歸模型預測（2026年9–11月）
+        </div>
+      </div>
+      <div class="method-item">
+        <div class="m-title">注意事項</div>
+        <div class="m-body">估計及預測值僅供趨勢參考，不代表官方數字。如需精確數據，請直接查閱 DICJ 官方網站，或使用本系統附帶的爬蟲程式（dicj_gaming_scraper.py）獲取最新資料。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <h2>計算方法說明</h2>
+    <div class="method-box" style="margin-top:0">
+      <div class="method-item">
+        <div class="m-title">① 幸運博彩毛收入 (GGR — Gross Gaming Revenue)</div>
+        <div class="m-body">指賭場在某一時期內，從賭客下注總額中扣除賭場派彩後所保留的金額。又稱「賭客淨輸款」。計算公式：</div>
+        <code class="m-formula">GGR = 賭客下注總額 − 賭場派彩</code>
+        <div class="m-body" style="margin-top:6px">單位為億澳門元（1億 = 100,000,000澳門元 ≈ 1,250萬美元）。GGR 不等於賭場盈利，賭場還需支付人工、稅款（35%）等各種成本。</div>
+      </div>
+      <div class="method-item">
+        <div class="m-title">② 同比變動（Year-over-Year, YoY）</div>
+        <div class="m-body">比較本期數字與去年同一時期的百分比變化：</div>
+        <code class="m-formula">YoY (%) = (本期 GGR ÷ 去年同期 GGR − 1) × 100%</code>
+      </div>
+      <div class="method-item">
+        <div class="m-title">③ 季節指數 (Seasonal Index)</div>
+        <div class="m-body">反映各月份 GGR 相對於全年月均水平的高低，用於識別淡旺季規律。本儀表板以2023–2024年兩年數據計算：</div>
+        <code class="m-formula">某月季節指數 = 該月2023–2024年平均 GGR ÷ 全年12個月平均 GGR</code>
+        <div class="m-body" style="margin-top:6px">指數 > 1.0：該月高於年度月均（旺季）；指數 &lt; 1.0：該月低於年度月均（淡季）。10月（黃金週）指數通常最高，1–3月因農曆新年時間浮動而指數相對不穩定。</div>
+      </div>
+      <div class="method-item">
+        <div class="m-title">④ 線性回歸趨勢預測 (Linear Regression Forecast)</div>
+        <div class="m-body">使用最近24個月的實際 GGR 數據，擬合一條最佳直線（最小二乘法），再將直線延伸至未來3個月，並乘以季節指數作出修正：</div>
+        <code class="m-formula">預測值 = (斜率 × 月份序號 + 截距) × 季節指數</code>
+        <div class="m-body" style="margin-top:6px">此方法假設近期趨勢線性延續，適用於短期（1–3個月）預測，長期預測誤差較大。±10% 置信帶反映短期不確定性，實際值可能超出此範圍。</div>
+      </div>
+      <div class="method-item">
+        <div class="m-title">⑤ 恢復率 (Recovery Rate)</div>
+        <div class="m-body">以2013年歷史峰值（3,607.4億澳門元）為基準，計算當年 GGR 相對回復的百分比：</div>
+        <code class="m-formula">恢復率 (%) = 當年全年 GGR ÷ 2013年峰值 (3,607.4億) × 100%</code>
+      </div>
+      <div class="method-item">
+        <div class="m-title">⑥ 熱力圖色彩含義</div>
+        <div class="m-body">顏色由深藍（低）→ 青綠（中）→ 金色（高）連續變化，對應各月 GGR 的相對水平：</div>
+        <code class="m-formula">深藍 (#1A3A6E) = 低收入 | 青綠 (#27B0A8) = 中等 | 金色 (#C9A227) = 最高峰</code>
+        <div class="m-body" style="margin-top:6px">色標以各年最高月份為上限（2013年10月約300億為金色上限）。2020年5–6月因全面封場，收入幾乎為零，顯示為極深色。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <h2>貨幣換算參考</h2>
+    <div class="method-box" style="margin-top:0">
+      <div class="method-item">
+        <div class="m-title">澳門元 (MOP) 換算</div>
+        <div class="m-body">澳門元與港元以約1.03:1匯率掛鈎（實際匯率微浮動）。換算參考（以約1 USD ≈ 8.0 MOP計）：</div>
+        <code class="m-formula">1億澳門元 ≈ 1,250萬美元 ≈ 9,700萬港元</code>
+        <div class="m-body" style="margin-top:6px">2024年全年 2,267.8億澳門元 ≈ 283億美元 ≈ 2,200億港元</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- TAB 6: ALL DATA TABLE -->
+<div id="alldata" class="panel" role="tabpanel">
+  <div class="chart-card">
+    <h2>歷年幸運博彩毛收入（2002–2026）</h2>
+    <div style="overflow-x:auto">
+      <table class="fc-table" id="allDataTable" style="min-width:500px">
+        <thead>
+          <tr>
+            <th>年份</th>
+            <th>年度收入（億澳門元）</th>
+            <th>同比變動</th>
+            <th>備注</th>
+          </tr>
+        </thead>
+        <tbody id="allDataBody"></tbody>
+      </table>
+    </div>
+    <p class="note">2025年為全年實際數據（DICJ確認）；2026年為1–8月實際數字（非全年，橙色標示）；2013年為歷史最高峰</p>
+  </div>
+
+  <div class="chart-card" style="margin-top:0">
+    <h2>歷年各月收入明細（2018–2026） · 億澳門元</h2>
+    <div style="overflow-x:auto">
+      <table class="fc-table" id="monthlyTable" style="min-width:900px;font-size:12px">
+        <thead id="monthlyThead"></thead>
+        <tbody id="monthlyTbody"></tbody>
+      </table>
+    </div>
+    <p class="note">2025年全年及2026年1–8月均為 DICJ 實際公報數字；2026年9–12月待發佈；2002–2017年僅有年度合計資料，不列月份明細</p>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA DEFINITIONS
+// ═══════════════════════════════════════════════
+const MONTHS_ZH    = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+const MONTHS_SHORT = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+// Annual totals (百萬澳門幣). Source: DICJ official monthly stats.
+// 2026 = Jan–Aug actual only (Sep–Dec not yet released).
+const ANNUAL_RAW = {
+  2002:23566, 2003:29254, 2004:40161, 2005:46851,
+  2006:56711, 2007:83191, 2008:108673,2009:119919,
+  2010:188285,2011:268127,2012:303847,2013:360741,
+  2014:351480,2015:231490,2016:224600,2017:265310,
+  2018:302830,2019:292460,2020:60440, 2021:86700,
+  2022:42180, 2023:183100,2024:226782,
+  2025:247404, // DICJ actual full year (all 12 months confirmed)
+  2026:169053, // DICJ actual Jan–Aug only (Sep–Dec not yet released)
+};
+// Which annual entries are partial-year (shown in orange to indicate incomplete)
+const ANNUAL_EST = new Set([2026]);
+
+// Monthly data (百萬澳門幣). null = not yet released.
+// 2025: all 12 months actual DICJ figures. 2026: Jan–Aug actual, Sep–Dec null.
+const MONTHLY_RAW = {
+  2018:[24980,22200,25350,24220,24750,23150,25730,23760,27550,24100,25450,26330],
+  2019:[24880,21980,25200,23650,23720,21450,24210,21700,28870,24060,25620,27120],
+  2020:[22110,1417,540,1580,1645,1520,2750,2740,4830,4830,5700,4180],
+  2021:[6790,4990,6080,7830,7520,7790,5380,5250,4820,4800,4340,4190],
+  2022:[5420,5280,5230,2540,277,396,2280,3850,3880,3960,3760,5150],
+  2023:[11580,10320,12740,14760,15570,15210,16660,17200,14800,19500,16040,18570],
+  2024:[19337,18486,19503,18545,20188,17694,18595,19754,17253,20787,18438,18202],
+  2025:[18254,19744,19659,18858,21193,21064,22125,22156,18289,24086,21088,20888],
+  2026:[22633,20627,22612,19894,22611,18522,20260,21891,null,null,null,null],
+};
+// Months that are estimates (year → Set of 0-based month indices)
+// All 2025 months are now confirmed actual. 2026 Jan-Aug are actual; Sep-Dec not yet released.
+const MONTHLY_EST = {};
+
+function isEst(year, mi) {
+  return MONTHLY_EST[year] && MONTHLY_EST[year].has(mi);
+}
+
+function toYi(v) { return v === null ? null : +(v/100).toFixed(2); }
+
+const ANNUAL = {};
+for (const [y,v] of Object.entries(ANNUAL_RAW)) ANNUAL[+y] = toYi(v);
+
+const MONTHLY = {};
+for (const [y,arr] of Object.entries(MONTHLY_RAW)) MONTHLY[+y] = arr.map(toYi);
+
+// Quarterly (百萬 → 億)
+const Q_2025_Q1_RAW = {
+  '百家樂\n貴賓廳':14460,'百家樂\n大眾廳':34300,
+  '三卡\n百家樂':120,'廿一點':210,'輪盤':145,
+  '骰寶':280,'牌九':110,'其他\n桌面博彩':270,'角子機':3220,
+};
+const Q_2025_Q1 = {};
+for (const [k,v] of Object.entries(Q_2025_Q1_RAW)) Q_2025_Q1[k] = toYi(v);
+
+const QUARTERLY_PERIODS = [
+  {label:'2024 Q1',vip:toYi(14378),mass:toYi(34600),slots:toYi(3220)},
+  {label:'2024 Q3',vip:toYi(15200),mass:toYi(34830),slots:toYi(4380)},
+  {label:'2025 Q1',vip:toYi(14460),mass:toYi(34300),slots:toYi(3220)},
+];
+
+const SERIES_COLORS = {
+  2018:'#4190D9',2019:'#27B0A8',2020:'#D95555',2021:'#E08842',
+  2022:'#9370D4',2023:'#E84A8A',2024:'#3BB87A',2025:'#C9A227',
+  2026:'#CC7722',
+};
+const COVID_YEARS = [2020,2021,2022];
+
+// ═══════════════════════════════════════════════
+// CHART DEFAULTS
+// ═══════════════════════════════════════════════
+Chart.register(ChartDataLabels);
+Chart.defaults.set('plugins.datalabels', { display:false });
+Chart.defaults.color = '#7498BE';
+Chart.defaults.borderColor = '#1C3358';
+Chart.defaults.font.family = "'Noto Sans TC', sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.plugins.legend.display = false;
+Chart.defaults.plugins.tooltip.backgroundColor = '#0C1D36';
+Chart.defaults.plugins.tooltip.borderColor = '#1C3358';
+Chart.defaults.plugins.tooltip.borderWidth = 1;
+Chart.defaults.plugins.tooltip.titleColor = '#D5E6F5';
+Chart.defaults.plugins.tooltip.bodyColor = '#7498BE';
+Chart.defaults.plugins.tooltip.padding = 10;
+Chart.defaults.plugins.tooltip.cornerRadius = 4;
+const gridOpts = { color:'#112A4A', drawBorder:false };
+
+// ═══════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════
+const tabBtns = document.querySelectorAll('.tab-btn');
+const panels  = document.querySelectorAll('.panel');
+const initialized = {};
+
+function switchTab(id) {
+  tabBtns.forEach(b => {
+    const a = b.dataset.panel===id;
+    b.classList.toggle('active',a);
+    b.setAttribute('aria-selected',a);
+  });
+  panels.forEach(p => p.classList.toggle('active', p.id===id));
+  if (!initialized[id]) { initialized[id]=true; initCharts(id); }
+}
+tabBtns.forEach(b => b.addEventListener('click', ()=> switchTab(b.dataset.panel)));
+
+function initCharts(panel) {
+  if (panel==='overview')  initOverview();
+  if (panel==='monthly')   initMonthly();
+  if (panel==='quarterly') initQuarterly();
+  if (panel==='forecast')  initForecast();
+  if (panel==='alldata')   initAllData();
+}
+
+// ═══════════════════════════════════════════════
+// OVERVIEW TAB
+// ═══════════════════════════════════════════════
+function initOverview() {
+  // Annual bar chart
+  const years  = Object.keys(ANNUAL).map(Number).sort((a,b)=>a-b);
+  const vals   = years.map(y => ANNUAL[y]);
+  const bgClrs = years.map(y =>
+    COVID_YEARS.includes(y) ? '#7A1F1F'
+    : y===2013 ? '#143A1A'
+    : ANNUAL_EST.has(y) ? '#3D2800'
+    : '#0E2844'
+  );
+  const bdClrs = years.map(y =>
+    COVID_YEARS.includes(y) ? '#D95555'
+    : y===2013 ? '#3BB87A'
+    : ANNUAL_EST.has(y) ? '#CC7722'
+    : '#4190D9'
+  );
+
+  new Chart(document.getElementById('annualChart'), {
+    type:'bar',
+    data:{
+      labels: years.map(y => ANNUAL_EST.has(y) ? y+'*' : String(y)),
+      datasets:[{ data:vals, backgroundColor:bgClrs, borderColor:bdClrs, borderWidth:1, borderRadius:2 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top:28 } },
+      scales:{
+        x:{ grid:gridOpts, ticks:{ color:'#7498BE', font:{size:10}, maxRotation:50 } },
+        y:{ grid:gridOpts, ticks:{ color:'#7498BE', callback:v=>v+'億' } }
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label:ctx=>{
+          const y=years[ctx.dataIndex];
+          const tag = ANNUAL_EST.has(y) ? (y===2026?' (估計Jan–Aug)':(y===2025?' (含Dec估計)':'')) : '';
+          return `${ctx.parsed.y.toFixed(1)}億澳門元${tag}`;
+        }}},
+        datalabels:{
+          display:true, anchor:'end', align:'top', offset:1,
+          rotation:-65, color:ctx=>bdClrs[ctx.dataIndex],
+          font:{size:8.5},
+          formatter:v=>Math.round(v),
+          clamp:true,
+        }
+      }
+    }
+  });
+
+  // ── Flexible 12-month period comparison chart ──────────────────────────
+  // Period definitions: key → { label, months: [{y,mi}] }
+  // "近12個月" = Sep 2025–Aug 2026 (latest 12 with data)
+  // Calendar years = Jan–Dec of that year (only if MONTHLY[y] exists)
+  const PERIODS = {};
+
+  // Near-12-months rolling window: last month with data = Aug 2026 (mi=7)
+  PERIODS['近12個月'] = {
+    label: '2025年9月–2026年8月',
+    months: [
+      {y:2025,mi:8},{y:2025,mi:9},{y:2025,mi:10},{y:2025,mi:11},
+      {y:2026,mi:0},{y:2026,mi:1},{y:2026,mi:2},{y:2026,mi:3},
+      {y:2026,mi:4},{y:2026,mi:5},{y:2026,mi:6},{y:2026,mi:7},
+    ],
+    xLabels: ['25/9','25/10','25/11','25/12','26/1','26/2','26/3','26/4','26/5','26/6','26/7','26/8'],
+    rolling: true, startYear:2025, startMi:8,
+  };
+  // Calendar years with monthly data
+  [2018,2019,2020,2021,2022,2023,2024,2025].forEach(y=>{
+    if(!MONTHLY[y]) return;
+    PERIODS[y+'全年'] = {
+      label: `${y}年全年`,
+      months: MONTHS_SHORT.map((_,mi)=>({y,mi})),
+      xLabels: MONTHS_SHORT,
+      rolling: false, year: y,
+    };
+  });
+
+  // Build period buttons
+  const mainFilter = document.getElementById('mainPeriodFilter');
+  const cmpFilter  = document.getElementById('cmpPeriodFilter');
+  let activePeriod = '近12個月';
+  let activeCmp    = 'none';
+  let flexChart    = null;
+
+  // Get data array for a period
+  function getPeriodData(periodKey) {
+    const p = PERIODS[periodKey];
+    return p.months.map(({y,mi}) => (MONTHLY[y] && MONTHLY[y][mi] != null) ? MONTHLY[y][mi] : null);
+  }
+
+  // Build comparison period options for a selected main period
+  function getCmpOptions(mainKey) {
+    const p = PERIODS[mainKey];
+    const opts = [{key:'none', label:'不比較'}];
+    if(p.rolling) {
+      // rolling: compare same 12-month window shifted 1–7 years back
+      for(let shift=1; shift<=7; shift++) {
+        const sy = p.startYear - shift, smi = p.startMi;
+        // check all 12 months exist
+        const months = p.months.map(({y,mi})=>({y:y-shift,mi}));
+        const allExist = months.every(({y,mi})=>MONTHLY[y]&&MONTHLY[y][mi]!=null);
+        if(allExist) {
+          const ey = p.months[11].y - shift;
+          opts.push({ key:`rolling-${shift}`, label:`${sy}年9月–${ey}年8月 (${shift}年前)`, months });
+        }
+      }
+    } else {
+      // calendar year: compare with any other calendar year that has full data
+      const mainY = p.year;
+      Object.keys(MONTHLY).map(Number).sort((a,b)=>a-b).forEach(y=>{
+        if(y===mainY) return;
+        const allExist = MONTHLY[y].every(v=>v!=null);
+        if(allExist) opts.push({ key:`cal-${y}`, label:`${y}年全年`, months:MONTHS_SHORT.map((_,mi)=>({y,mi})) });
+      });
+    }
+    return opts;
+  }
+
+  // Render comparison filter buttons
+  function renderCmpFilter(mainKey) {
+    cmpFilter.innerHTML='';
+    activeCmp='none';
+    const opts = getCmpOptions(mainKey);
+    opts.forEach(opt=>{
+      const btn=document.createElement('button');
+      btn.className='yr-btn'+(opt.key==='none'?' sel':'');
+      btn.textContent=opt.label;
+      btn.dataset.cmpKey=opt.key;
+      btn.addEventListener('click',()=>{
+        activeCmp=opt.key;
+        cmpFilter.querySelectorAll('.yr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.cmpKey===opt.key));
+        updateFlexChart(mainKey, opt);
+      });
+      cmpFilter.appendChild(btn);
+    });
+  }
+
+  // Build or update the chart
+  function updateFlexChart(mainKey, cmpOpt) {
+    const p = PERIODS[mainKey];
+    const mainData = getPeriodData(mainKey);
+    const ds = [{
+      label: p.label,
+      data: mainData,
+      backgroundColor:'#0E2844', borderColor:'#4190D9', borderWidth:1, borderRadius:2,
+      order:1,
+    }];
+    if(cmpOpt && cmpOpt.key!=='none') {
+      const cmpData = cmpOpt.months.map(({y,mi})=>(MONTHLY[y]&&MONTHLY[y][mi]!=null)?MONTHLY[y][mi]:null);
+      ds.push({
+        label: cmpOpt.label,
+        data: cmpData,
+        type:'line',
+        borderColor:'#3BB87A', backgroundColor:'transparent',
+        borderWidth:2, pointRadius:3, pointBackgroundColor:'#3BB87A',
+        tension:0.3, order:0, datalabels:{display:false},
+      });
+    }
+    const mainLeg = document.getElementById('main-legend-text');
+    const yoyLeg  = document.getElementById('yoy-legend');
+    const yoyLegTxt = document.getElementById('yoy-legend-text');
+    mainLeg.textContent = p.label;
+    if(cmpOpt && cmpOpt.key!=='none') {
+      yoyLeg.hidden=false;
+      yoyLegTxt.textContent=cmpOpt.label;
+    } else {
+      yoyLeg.hidden=true;
+    }
+    const note = document.getElementById('trailing12Note');
+    note.textContent = (mainKey==='近12個月')
+      ? '數據來源：DICJ 官方月度統計公報；2026年9–12月待發佈'
+      : `數據來源：DICJ 官方月度統計公報；${p.label}全部為已確認實際數字`;
+
+    if(flexChart) {
+      flexChart.data.labels = p.xLabels;
+      flexChart.data.datasets = ds;
+      flexChart.update();
+    } else {
+      flexChart = new Chart(document.getElementById('monthly2026Chart'), {
+        type:'bar',
+        data:{ labels:p.xLabels, datasets:ds },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          layout:{ padding:{top:24} },
+          interaction:{ mode:'index', intersect:false },
+          scales:{
+            x:{ grid:{display:false}, ticks:{color:'#7498BE',font:{size:10}} },
+            y:{ grid:gridOpts, ticks:{color:'#7498BE',callback:v=>v+'億'}, min:0 }
+          },
+          plugins:{
+            legend:{display:false},
+            tooltip:{ callbacks:{ label:ctx=>{
+              if(ctx.parsed.y===null)return null;
+              const suf = ctx.datasetIndex===0?'（主要期間）':'（對比）';
+              return `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}億${suf}`;
+            }}},
+            datalabels:{
+              display:ctx=>ctx.datasetIndex===0,
+              anchor:'end', align:'top', offset:1,
+              color:'#4190D9', font:{size:9},
+              formatter:v=>v!=null?v.toFixed(1):'',
+            }
+          }
+        }
+      });
+    }
+  }
+
+  // Render main period buttons
+  Object.keys(PERIODS).forEach(key=>{
+    const btn=document.createElement('button');
+    btn.className='yr-btn'+(key==='近12個月'?' sel':'');
+    btn.dataset.periodKey=key;
+    btn.textContent = key==='近12個月' ? '近12個月 ★' : key;
+    btn.title = PERIODS[key].label;
+    btn.addEventListener('click',()=>{
+      activePeriod=key;
+      mainFilter.querySelectorAll('.yr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.periodKey===key));
+      renderCmpFilter(key);
+      updateFlexChart(key, {key:'none'});
+    });
+    mainFilter.appendChild(btn);
+  });
+
+  // Init with default period
+  renderCmpFilter('近12個月');
+  updateFlexChart('近12個月', {key:'none'});
+  document.getElementById('main-legend-text').textContent = PERIODS['近12個月'].label;
+
+  // ── YoY bar chart (2026 Jan-Aug vs 2025) ──────────────────────────────
+  const yoyMonths = MONTHS_SHORT.slice(0,8); // Jan–Aug labels
+  const yoyPcts = MONTHLY[2026].slice(0,8).map((v,mi)=>{
+    const prev = MONTHLY[2025][mi];
+    if(!v||!prev) return null;
+    return +((v/prev-1)*100).toFixed(1);
+  });
+  new Chart(document.getElementById('yoyBarChart'), {
+    type:'bar',
+    data:{
+      labels: yoyMonths,
+      datasets:[{
+        data: yoyPcts,
+        backgroundColor: yoyPcts.map(v=>v>=0?'rgba(59,184,122,0.3)':'rgba(217,85,85,0.3)'),
+        borderColor:      yoyPcts.map(v=>v>=0?'#3BB87A':'#D95555'),
+        borderWidth:1, borderRadius:2,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{top:20} },
+      scales:{
+        x:{ grid:{display:false}, ticks:{color:'#7498BE',font:{size:10}} },
+        y:{ grid:gridOpts, ticks:{color:'#7498BE',callback:v=>v+'%'} }
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label:ctx=>ctx.parsed.y!=null?`${ctx.parsed.y>0?'+':''}${ctx.parsed.y}% vs 2025`:null } },
+        datalabels:{
+          display:true, anchor:'end', align:ctx=>ctx.parsed.y>=0?'top':'bottom',
+          offset:1, color:ctx=>ctx.parsed.y>=0?'#3BB87A':'#D95555',
+          font:{size:9}, formatter:v=>v!=null?(v>0?'+':'')+v+'%':'',
+        }
+      }
+    }
+  });
+
+  // Donut
+  const dlabels = Object.keys(Q_2025_Q1);
+  const dvals   = Object.values(Q_2025_Q1);
+  const dtotal  = dvals.reduce((a,b)=>a+b,0);
+  const dcolors = ['#D95555','#27B0A8','#9370D4','#4190D9','#E08842','#3BB87A','#E84A8A','#C9A227','#5588BB'];
+
+  new Chart(document.getElementById('donutChart'), {
+    type:'doughnut',
+    data:{ labels:dlabels, datasets:[{ data:dvals, backgroundColor:dcolors, borderColor:'#122040', borderWidth:2, hoverOffset:6 }] },
+    options:{
+      responsive:true, maintainAspectRatio:true,
+      cutout:'56%',
+      layout:{ padding:28 },
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label:ctx=>`${ctx.label.replace('\n','')}: ${ctx.raw.toFixed(1)}億 (${(ctx.raw/dtotal*100).toFixed(1)}%)` } },
+        datalabels:{
+          display: ctx => (ctx.dataset.data[ctx.dataIndex]/dtotal) >= 0.01,
+          formatter:(v,ctx)=>{
+            const pct=(v/dtotal*100).toFixed(1);
+            const large = v/dtotal >= 0.10;
+            return large ? dlabels[ctx.dataIndex].replace('\n','\n')+'\n'+pct+'%' : pct+'%';
+          },
+          color: ctx=>(ctx.dataset.data[ctx.dataIndex]/dtotal>=0.10)?'#fff':'#D5E6F5',
+          anchor: ctx=>(ctx.dataset.data[ctx.dataIndex]/dtotal>=0.10)?'center':'end',
+          align: ctx=>(ctx.dataset.data[ctx.dataIndex]/dtotal>=0.10)?'center':'end',
+          offset: ctx=>(ctx.dataset.data[ctx.dataIndex]/dtotal>=0.10)?0:6,
+          font: ctx=>({ size:(ctx.dataset.data[ctx.dataIndex]/dtotal>=0.10)?11:9, weight:(ctx.dataset.data[ctx.dataIndex]/dtotal>=0.10)?'bold':'normal' }),
+          textAlign:'center',
+        }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// MONTHLY TRENDS TAB
+// ═══════════════════════════════════════════════
+let trendChart = null;
+let selectedYears = new Set([2024, 2025, 2026]);
+
+function initMonthly() {
+  const filter   = document.getElementById('yearFilter');
+  const yearKeys = Object.keys(MONTHLY).map(Number).sort((a,b)=>a-b);
+  yearKeys.forEach(y => {
+    const btn = document.createElement('button');
+    const hasEst = MONTHLY_EST[y] && MONTHLY_EST[y].size > 0;
+    btn.className = 'yr-btn' + (selectedYears.has(y)?' sel':'') + (hasEst?' est-yr':'');
+    btn.textContent = hasEst ? y+'*' : y;
+    btn.title = hasEst ? `${y}年含估計值` : `${y}年實際數據`;
+    btn.addEventListener('click', ()=>{
+      if(selectedYears.has(y)){if(selectedYears.size>1)selectedYears.delete(y);}
+      else selectedYears.add(y);
+      filter.querySelectorAll('.yr-btn').forEach((b,i)=> b.classList.toggle('sel', selectedYears.has(yearKeys[i])));
+      updateTrendChart();
+    });
+    filter.appendChild(btn);
+  });
+  buildTrendChart();
+  buildHeatmap();
+}
+
+function buildTrendDatasets() {
+  return [...selectedYears].sort().map(y => {
+    const isEstYear = MONTHLY_EST[y] && MONTHLY_EST[y].size>0;
+    return {
+      label: String(y),
+      data: MONTHLY[y].map(v=>v),
+      borderColor: SERIES_COLORS[y]||'#888',
+      backgroundColor:'transparent',
+      borderWidth: y===2025||y===2026 ? 2.5:1.5,
+      pointRadius: y>=2024 ? 3:2,
+      pointHoverRadius:6,
+      tension:0.3,
+      borderDash: COVID_YEARS.includes(y)?[5,3]: isEstYear?[8,3]:[],
+      spanGaps:false,
+    };
+  });
+}
+
+function buildTrendChart() {
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type:'line',
+    data:{ labels:MONTHS_SHORT, datasets:buildTrendDatasets() },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      scales:{
+        x:{ grid:{display:false}, ticks:{color:'#7498BE'} },
+        y:{ grid:gridOpts, ticks:{color:'#7498BE', callback:v=>v+'億'} }
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label:ctx=>{
+          const v=ctx.parsed.y;
+          if(v===null)return null;
+          const yr=+ctx.dataset.label;
+          const estMi = MONTHLY_EST[yr] && MONTHLY_EST[yr].has(ctx.dataIndex);
+          return `${yr}: ${v.toFixed(1)}億${estMi?'（估計）':''}`;
+        }}},
+        datalabels:{display:false},
+      }
+    }
+  });
+  updateLegend();
+}
+
+function updateTrendChart() {
+  if(!trendChart) return;
+  trendChart.data.datasets = buildTrendDatasets();
+  trendChart.update();
+  updateLegend();
+}
+
+function updateLegend() {
+  const leg = document.getElementById('trendLegend');
+  leg.innerHTML='';
+  [...selectedYears].sort().forEach(y=>{
+    const div=document.createElement('div');
+    div.className='legend-item';
+    const hasEst=MONTHLY_EST[y]&&MONTHLY_EST[y].size>0;
+    div.innerHTML=`<span class="legend-bar" style="background:${SERIES_COLORS[y]||'#888'};border-style:${hasEst?'dashed':'solid'}"></span>${y}${hasEst?'*':''}`;
+    leg.appendChild(div);
+  });
+}
+
+function buildHeatmap() {
+  const canvas=document.getElementById('heatmapCanvas');
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const W=canvas.parentElement.clientWidth||600;
+  const rows=Object.keys(MONTHLY).map(Number).sort((a,b)=>a-b);
+  const cellW=(W-48)/12, cellH=26, labelW=44;
+  const H=rows.length*cellH+28;
+  canvas.width=Math.round(W*dpr); canvas.height=Math.round(H*dpr); canvas.style.height=H+'px';
+  const ctx2=canvas.getContext('2d');
+  ctx2.scale(dpr,dpr); ctx2.clearRect(0,0,W,H);
+
+  let gmax=0;
+  rows.forEach(y=>MONTHLY[y].forEach(v=>{if(v&&v>gmax)gmax=v;}));
+
+  function lerp(a,b,t){
+    const pa=parseInt(a.slice(1),16),pb=parseInt(b.slice(1),16);
+    const ra=(pa>>16)&255,ga=(pa>>8)&255,ba=pa&255;
+    const rb=(pb>>16)&255,gb=(pb>>8)&255,bb=pb&255;
+    return `rgb(${Math.round(ra+(rb-ra)*t)},${Math.round(ga+(gb-ga)*t)},${Math.round(ba+(bb-ba)*t)})`;
+  }
+  function heatColor(val){
+    if(!val)return '#071322';
+    const t=Math.min(val/gmax,1);
+    return t<0.5?lerp('#1A3A6E','#27B0A8',t*2):lerp('#27B0A8','#C9A227',(t-0.5)*2);
+  }
+
+  ctx2.fillStyle='#3A5574'; ctx2.font='10px Noto Sans TC,sans-serif'; ctx2.textAlign='center';
+  MONTHS_SHORT.forEach((m,i)=>ctx2.fillText(m, labelW+i*cellW+cellW/2, 11));
+
+  rows.forEach((y,ri)=>{
+    const top=18+ri*cellH;
+    ctx2.fillStyle='#7498BE'; ctx2.textAlign='right'; ctx2.font='11px Noto Sans TC,sans-serif';
+    ctx2.fillText(y, labelW-5, top+cellH/2+4);
+    MONTHLY[y].forEach((v,ci)=>{
+      const x=labelW+ci*cellW;
+      const estCell=isEst(y,ci);
+      ctx2.fillStyle=heatColor(v);
+      ctx2.fillRect(x+1,top+1,cellW-2,cellH-2);
+      // Hatching for estimated cells
+      if(estCell&&v){
+        ctx2.strokeStyle='rgba(204,119,34,0.4)'; ctx2.lineWidth=1;
+        ctx2.beginPath(); ctx2.moveTo(x+1,top+cellH-3); ctx2.lineTo(x+cellW-2,top+2); ctx2.stroke();
+      }
+      if(v&&v>80){
+        ctx2.fillStyle=(v/gmax>0.55)?'#071322':'#D5E6F5';
+        ctx2.textAlign='center'; ctx2.font='8.5px Noto Sans TC,sans-serif';
+        ctx2.fillText(Math.round(v), x+cellW/2, top+cellH/2+3);
+      }
+    });
+  });
+
+  const lb=document.getElementById('legendBar');
+  const lbCtx=lb.getContext('2d');
+  const grad=lbCtx.createLinearGradient(0,0,180,0);
+  grad.addColorStop(0,'#071322'); grad.addColorStop(0.5,'#27B0A8'); grad.addColorStop(1,'#C9A227');
+  lbCtx.fillStyle=grad; lbCtx.fillRect(0,0,180,12);
+}
+
+// ═══════════════════════════════════════════════
+// QUARTERLY TAB
+// ═══════════════════════════════════════════════
+function initQuarterly() {
+  new Chart(document.getElementById('vipMassChart'), {
+    type:'bar',
+    data:{
+      labels:QUARTERLY_PERIODS.map(p=>p.label),
+      datasets:[
+        { label:'百家樂貴賓廳', data:QUARTERLY_PERIODS.map(p=>p.vip),  backgroundColor:'#7A1F1F', borderColor:'#D95555', borderWidth:1, borderRadius:3 },
+        { label:'百家樂大眾廳', data:QUARTERLY_PERIODS.map(p=>p.mass), backgroundColor:'#0D3D3B', borderColor:'#27B0A8', borderWidth:1, borderRadius:3 },
+        { label:'角子機',       data:QUARTERLY_PERIODS.map(p=>p.slots),backgroundColor:'#0E2844', borderColor:'#4190D9', borderWidth:1, borderRadius:3 },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top:24 } },
+      plugins:{
+        legend:{ display:true, labels:{color:'#7498BE',padding:16,boxWidth:12,font:{size:12}} },
+        tooltip:{ callbacks:{ label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}億` } },
+        datalabels:{ display:true, anchor:'end', align:'top', offset:1, color:'#D5E6F5', font:{size:10}, formatter:v=>v.toFixed(1) }
+      },
+      scales:{
+        x:{ grid:{display:false}, ticks:{color:'#7498BE'} },
+        y:{ grid:gridOpts, ticks:{color:'#7498BE', callback:v=>v+'億'} }
+      }
+    }
+  });
+
+  const gkeys=Object.keys(Q_2025_Q1);
+  const gvals=Object.values(Q_2025_Q1);
+  const gtotal=gvals.reduce((a,b)=>a+b,0);
+  const gcolors=['#D95555','#27B0A8','#9370D4','#4190D9','#E08842','#3BB87A','#E84A8A','#C9A227','#5588BB'];
+
+  new Chart(document.getElementById('gameBarChart'), {
+    type:'bar',
+    data:{
+      labels:gkeys.map(k=>k.replace('\n',' ')),
+      datasets:[{ data:gvals, backgroundColor:gcolors.map(c=>c+'44'), borderColor:gcolors, borderWidth:1, borderRadius:3 }]
+    },
+    options:{
+      indexAxis:'y',
+      responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ right:55 } },
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label:ctx=>`${ctx.parsed.x.toFixed(1)}億澳門元 (${(ctx.parsed.x/gtotal*100).toFixed(1)}%)` } },
+        datalabels:{
+          display:true, anchor:'end', align:'end', offset:4,
+          color:'#D5E6F5', font:{size:10.5}, clamp:true,
+          formatter:(v,ctx)=>{
+            const pct=(v/gtotal*100).toFixed(1);
+            return `${v.toFixed(1)}億 (${pct}%)`;
+          }
+        }
+      },
+      scales:{
+        x:{ grid:gridOpts, ticks:{color:'#7498BE',callback:v=>v+'億'} },
+        y:{ grid:{display:false}, ticks:{color:'#D5E6F5',font:{size:11}} }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// FORECAST TAB
+// ═══════════════════════════════════════════════
+function initForecast() {
+  // Seasonal indices (2024–2025 actual — both now fully confirmed)
+  const monthlyAvgs = Array.from({length:12},(_,i)=>{
+    const vals=[2024,2025].map(y=>MONTHLY[y][i]).filter(v=>v!=null);
+    return vals.reduce((a,b)=>a+b,0)/vals.length;
+  });
+  const grandAvg = monthlyAvgs.reduce((a,b)=>a+b,0)/12;
+  const seasIdx  = monthlyAvgs.map(v=>v/grandAvg);
+
+  // Linear regression: 2024 (12) + 2025 (12) + 2026 Jan–Aug (8) = 32 actual points
+  const actualPts=[];
+  [2024,2025].forEach(y=>{
+    MONTHLY[y].forEach((v,mi)=>{
+      if(v!==null) actualPts.push([actualPts.length+1, v]);
+    });
+  });
+  MONTHLY[2026].forEach((v,mi)=>{
+    if(v!==null) actualPts.push([actualPts.length+1, v]);
+  });
+  const n=actualPts.length; // 32
+  let sx=0,sy=0,sxy=0,sx2=0;
+  for(const[x,y]of actualPts){sx+=x;sy+=y;sxy+=x*y;sx2+=x*x;}
+  const slope=(n*sxy-sx*sy)/(n*sx2-sx*sx);
+  const icept=(sy-slope*sx)/n;
+  const predict=x=>Math.max(slope*x+icept,80);
+
+  // 12-month window: 2025 Sep–Dec + 2026 Jan–Aug (all actual DICJ figures)
+  const windowActual = [
+    ...MONTHLY[2025].slice(8, 12), // Sep-Dec 2025 actual
+    ...MONTHLY[2026].slice(0, 8),  // Jan-Aug 2026 actual
+  ];
+  const windowLabels = [
+    '2025-9月','2025-10月','2025-11月','2025-12月',
+    '2026-1月','2026-2月','2026-3月','2026-4月',
+    '2026-5月','2026-6月','2026-7月','2026-8月',
+  ];
+
+  // Forecast: Sep–Nov 2026 (32 actual pts → next 3 = x=33,34,35)
+  const fcBase = actualPts.length; // 32
+  const fcMonths = [9, 10, 11];
+  const fcLabels = ['2026-9月','2026-10月','2026-11月'];
+  const fcX = [fcBase+1, fcBase+2, fcBase+3];
+  const fcVals = fcX.map((x,i)=>+(predict(x)*seasIdx[fcMonths[i]-1]).toFixed(2));
+
+  const chartLabels = [...windowLabels, ...fcLabels];
+  const actualData  = [...windowActual, null, null, null];
+  // Connect last actual point to first forecast point
+  const fcData = [...Array(11).fill(null), windowActual[11], ...fcVals];
+  const fcHi   = [...Array(12).fill(null), ...fcVals.map(v=>+(v*1.10).toFixed(1))];
+  const fcLo   = [...Array(12).fill(null), ...fcVals.map(v=>+(v*0.90).toFixed(1))];
+
+  new Chart(document.getElementById('forecastChart'), {
+    type:'line',
+    data:{
+      labels:chartLabels,
+      datasets:[
+        { label:'預測上限', data:fcHi, borderColor:'transparent', backgroundColor:'rgba(201,162,39,0.15)', borderWidth:0, fill:'+1', pointRadius:0, tension:0.3 },
+        { label:'預測下限', data:fcLo, borderColor:'transparent', backgroundColor:'rgba(201,162,39,0.15)', borderWidth:0, fill:false, pointRadius:0, tension:0.3 },
+        { label:'預測值(9-11月)', data:fcData, borderColor:'#C9A227', backgroundColor:'transparent', borderWidth:2, borderDash:[6,3], pointRadius:4, pointBackgroundColor:'#C9A227', tension:0.3, spanGaps:false },
+        { label:'實際收入', data:actualData, borderColor:'#4190D9', backgroundColor:'rgba(65,144,217,0.08)', borderWidth:2.5, pointRadius:3, pointBackgroundColor:'#4190D9', tension:0.3, fill:true, spanGaps:false },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      scales:{
+        x:{ grid:{display:false}, ticks:{color:'#7498BE', maxRotation:45, font:{size:10}} },
+        y:{ grid:gridOpts, ticks:{color:'#7498BE', callback:v=>v+'億'} }
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label:ctx=>{
+              if(ctx.parsed.y===null)return null;
+              const suf=ctx.dataset.label.includes('估計')?'（估計值）':ctx.dataset.label.includes('預測')?'（預測值）':'';
+              return `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}億${suf}`;
+            }
+          },
+          filter:item=>item.parsed.y!==null,
+        },
+        datalabels:{
+          display:ctx=>{
+            if(ctx.datasetIndex!==4)return false; // actual only
+            return ctx.dataIndex===2; // highlight Nov 2025 (last actual)
+          },
+          anchor:'top',align:'top',offset:4,
+          color:'#4190D9',font:{size:10},
+          formatter:v=>v!==null?v.toFixed(1)+'億':'',
+        }
+      }
+    }
+  });
+
+  // Forecast table
+  const tbl=document.getElementById('forecastTable');
+  tbl.innerHTML=`<thead><tr><th>月份</th><th>預測（億）</th><th>下限（-10%）</th><th>上限（+10%）</th><th>季節指數</th></tr></thead>`;
+  const tbody=document.createElement('tbody');
+  fcLabels.forEach((lbl,i)=>{
+    const mi=fcMonths[i]-1;
+    const tr=document.createElement('tr');
+    tr.className='fc-row';
+    tr.innerHTML=`
+      <td>${lbl}</td>
+      <td>${fcVals[i].toFixed(1)}</td>
+      <td>${(fcVals[i]*0.9).toFixed(1)}</td>
+      <td>${(fcVals[i]*1.1).toFixed(1)}</td>
+      <td>${seasIdx[mi].toFixed(3)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+
+  // Seasonal grid
+  const grid=document.getElementById('seasGrid');
+  MONTHS_ZH.forEach((m,i)=>{
+    const idx=seasIdx[i];
+    const cls=idx>=1.05?'high':idx>=0.95?'med':'low';
+    const div=document.createElement('div');
+    div.className='seas-cell';
+    div.innerHTML=`<div class="s-month">${m}</div><div class="s-idx ${cls}">${idx.toFixed(3)}</div>`;
+    grid.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// ALL DATA TABLE TAB
+// ═══════════════════════════════════════════════
+function initAllData() {
+  // Annual table
+  const years = Object.keys(ANNUAL_RAW).map(Number).sort((a,b)=>b-a); // newest first
+  const notes = {
+    2026:'1–8月實際', 2025:'全年實際', 2024:'',
+    2023:'疫後強勁復甦', 2022:'疫情封城（5–6月）', 2021:'疫情低谷',
+    2020:'COVID嚴重衝擊（–79%）', 2019:'', 2018:'',
+    2017:'', 2016:'', 2015:'反腐政策影響',
+    2014:'', 2013:'📈 歷史最高峰', 2012:'',
+    2011:'', 2010:'', 2009:'',
+    2008:'', 2007:'', 2006:'',
+    2005:'', 2004:'', 2003:'SARS疫情',
+    2002:'博彩開放元年',
+  };
+  const tbody = document.getElementById('allDataBody');
+  let prevVal = null;
+  // Build sorted years array for YoY calc (ascending needed)
+  const ascYears = [...years].sort((a,b)=>a-b);
+  const annualVals = {};
+  ascYears.forEach(y => { annualVals[y] = ANNUAL[y]; });
+
+  years.forEach(y => {
+    const val = ANNUAL[y];
+    const prevY = y-1;
+    const prev  = annualVals[prevY];
+    const yoy   = (val && prev) ? ((val/prev-1)*100).toFixed(1) : '—';
+    const yoyNum = parseFloat(yoy);
+    const yoyColor = isNaN(yoyNum) ? 'var(--txt-mid)' : yoyNum>=0 ? 'var(--green)' : 'var(--red)';
+    const yoySign  = isNaN(yoyNum) ? '' : yoyNum>=0 ? '▲ +' : '▼ ';
+    const isEstY   = ANNUAL_EST.has(y);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-variant-numeric:tabular-nums;color:${isEstY?'var(--est-color)':'var(--gold)'};font-weight:500">
+        ${y}${isEstY?'*':''}
+      </td>
+      <td style="font-variant-numeric:tabular-nums">
+        ${val ? val.toFixed(1) : '—'}
+        ${y===2026?'<span style="font-size:10px;color:var(--txt-lo)"> (截至8月)</span>':''}
+      </td>
+      <td style="color:${yoyColor};font-variant-numeric:tabular-nums">
+        ${isNaN(yoyNum) ? '—' : yoySign+Math.abs(yoyNum).toFixed(1)+'%'}
+      </td>
+      <td style="font-size:12px;color:var(--txt-mid)">${notes[y]||''}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Monthly detail table (2018–2026)
+  const mYears = Object.keys(MONTHLY).map(Number).sort((a,b)=>b-a);
+  const thead = document.getElementById('monthlyThead');
+  const thRow = document.createElement('tr');
+  thRow.innerHTML = '<th>年份</th>' + MONTHS_SHORT.map(m=>`<th>${m}</th>`).join('') + '<th>全年合計</th>';
+  thead.appendChild(thRow);
+
+  const mtbody = document.getElementById('monthlyTbody');
+  mYears.forEach(y=>{
+    const tr=document.createElement('tr');
+    const isEstY=ANNUAL_EST.has(y);
+    const annualTot=ANNUAL[y];
+    let cells = `<td style="color:${isEstY?'var(--est-color)':'var(--gold)'};font-weight:500;white-space:nowrap">${y}${isEstY?'*':''}</td>`;
+    MONTHLY[y].forEach((v,mi)=>{
+      const estCell=isEst(y,mi);
+      const color = estCell ? 'var(--est-color)' : (v===null ? 'var(--txt-lo)' : 'var(--txt-hi)');
+      cells += `<td style="font-variant-numeric:tabular-nums;color:${color};text-align:right">
+        ${v!==null ? v.toFixed(1)+(estCell?'*':'') : '—'}
+      </td>`;
+    });
+    // Annual total
+    cells += `<td style="font-variant-numeric:tabular-nums;color:${isEstY?'var(--est-color)':'var(--gold)'};text-align:right;font-weight:500">
+      ${annualTot?annualTot.toFixed(1)+(y===2026?' (估計)':isEstY?' (估計)':''):'—'}
+    </td>`;
+    tr.innerHTML = cells;
+    mtbody.appendChild(tr);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════
+initialized['overview']=true;
+function boot(){if(!window.__ovInit){window.__ovInit=true;initCharts('overview');}}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
+else boot();
+</script>
