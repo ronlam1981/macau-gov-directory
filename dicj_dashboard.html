@@ -1185,13 +1185,23 @@ function initAllData() {
 
   years.forEach(y => {
     const val = ANNUAL[y];
-    const prevY = y-1;
-    const prev  = annualVals[prevY];
-    const yoy   = (val && prev) ? ((val/prev-1)*100).toFixed(1) : '—';
-    const yoyNum = parseFloat(yoy);
+    const isEstY = ANNUAL_EST.has(y);
+    // For partial years, compare same months vs prior year (apples-to-apples)
+    let yoyNum, yoyLabel;
+    if (y === 2026 && MONTHLY[2026] && MONTHLY[2025]) {
+      // Count actual months in 2026
+      const actualMonths = MONTHLY[2026].filter(v => v !== null).length;
+      const ytd2026 = MONTHLY[2026].slice(0, actualMonths).reduce((a,b)=>a+(b||0), 0);
+      const ytd2025 = MONTHLY[2025].slice(0, actualMonths).reduce((a,b)=>a+(b||0), 0);
+      yoyNum = ytd2025 ? +((ytd2026/ytd2025-1)*100).toFixed(1) : NaN;
+      yoyLabel = `vs 2025年同期(1–${actualMonths}月)`;
+    } else {
+      const prev = annualVals[y-1];
+      yoyNum = (val && prev) ? +((val/prev-1)*100).toFixed(1) : NaN;
+      yoyLabel = '';
+    }
     const yoyColor = isNaN(yoyNum) ? 'var(--txt-mid)' : yoyNum>=0 ? 'var(--green)' : 'var(--red)';
     const yoySign  = isNaN(yoyNum) ? '' : yoyNum>=0 ? '▲ +' : '▼ ';
-    const isEstY   = ANNUAL_EST.has(y);
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td style="font-variant-numeric:tabular-nums;color:${isEstY?'var(--est-color)':'var(--gold)'};font-weight:500">
@@ -1203,6 +1213,7 @@ function initAllData() {
       </td>
       <td style="color:${yoyColor};font-variant-numeric:tabular-nums">
         ${isNaN(yoyNum) ? '—' : yoySign+Math.abs(yoyNum).toFixed(1)+'%'}
+        ${yoyLabel?`<span style="display:block;font-size:10px;color:var(--txt-lo);font-weight:400">${yoyLabel}</span>`:''}
       </td>
       <td style="font-size:12px;color:var(--txt-mid)">${notes[y]||''}</td>
     `;
@@ -1231,7 +1242,7 @@ function initAllData() {
     });
     // Annual total
     cells += `<td style="font-variant-numeric:tabular-nums;color:${isEstY?'var(--est-color)':'var(--gold)'};text-align:right;font-weight:500">
-      ${annualTot?annualTot.toFixed(1)+(y===2026?' (估計)':isEstY?' (估計)':''):'—'}
+      ${annualTot?annualTot.toFixed(1)+(y===2026?' (截至8月)':isEstY?' (部分年份)':''):'—'}
     </td>`;
     tr.innerHTML = cells;
     mtbody.appendChild(tr);
