@@ -185,11 +185,11 @@ body {
     <h2>任意12個月收入比較 · 億澳門元</h2>
     <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;flex-wrap:wrap">
       <span style="font-size:11px;color:var(--txt-lo);padding-top:5px;flex-shrink:0">主要期間：</span>
-      <div class="year-filter" id="mainPeriodFilter" style="margin:0;gap:4px;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap;max-width:calc(100% - 70px)"></div>
+      <div class="year-filter" id="mainPeriodFilter" style="margin:0;gap:4px;flex-wrap:wrap;max-width:calc(100% - 70px)"></div>
     </div>
     <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:12px;flex-wrap:wrap">
       <span style="font-size:11px;color:var(--txt-lo);padding-top:5px;flex-shrink:0">同比對比：</span>
-      <div class="year-filter" id="cmpPeriodFilter" style="margin:0;gap:4px;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap;max-width:calc(100% - 70px)"></div>
+      <div class="year-filter" id="cmpPeriodFilter" style="margin:0;gap:4px;flex-wrap:wrap;max-width:calc(100% - 70px)"></div>
     </div>
     <div style="position:relative;height:240px">
       <canvas id="monthly2026Chart" style="max-width:100%;height:100%"></canvas>
@@ -775,8 +775,8 @@ function initOverview() {
         legend:{display:false},
         tooltip:{ callbacks:{ label:ctx=>ctx.parsed.y!=null?`${ctx.parsed.y>0?'+':''}${ctx.parsed.y}% vs 2025`:null } },
         datalabels:{
-          display:true, anchor:'end', align:ctx=>ctx.parsed.y>=0?'top':'bottom',
-          offset:1, color:ctx=>ctx.parsed.y>=0?'#3BB87A':'#D95555',
+          display:true, anchor:'end', align:ctx=>{ const v=ctx.dataset.data[ctx.dataIndex]; return v!=null&&v>=0?'top':'bottom'; },
+          offset:1, color:ctx=>{ const v=ctx.dataset.data[ctx.dataIndex]; return v!=null&&v>=0?'#3BB87A':'#D95555'; },
           font:{size:9}, formatter:v=>v!=null?(v>0?'+':'')+v+'%':'',
         }
       }
