@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main"]
   workflow_run:
-    workflows: ["每日自動更新資料庫"]
+    workflows: ["每週自動更新資料庫"]
     types: [completed]
   workflow_dispatch:
 

@@ -8,11 +8,11 @@
 
 ## 更新資料
 
-### 自動更新（每日）
+### 自動更新（每週）
 
-GitHub Actions 會於每日澳門時間早上 07:00 自動執行 `updatedata.py`：從 gov.mo 下載最新資料、與現有資料比對，如有變更會自動更新 `index.html`、`CHANGELOG.md` 並推送到 `main`，觸發 GitHub Pages 重新部署。如資料無變更則不會產生任何提交。
+GitHub Actions 會於每週一澳門時間早上 07:00 自動執行 `updatedata.py`：從 gov.mo 下載最新資料、與現有資料比對，如有變更會自動更新 `index.html`、`CHANGELOG.md` 並推送到 `main`，觸發 GitHub Pages 重新部署。如資料無變更則不會產生任何提交。
 
-設定檔：`.github/workflows/update-data.yml`；亦可在 GitHub 網頁的 Actions 分頁手動觸發（workflow_dispatch）。
+設定檔：`.github/workflows/update-data.yml`；網站的「手動更新資料」連結會開啟 GitHub Actions，登入並擁有儲存庫權限後可手動觸發（`workflow_dispatch`）。
 
 ### 手動更新
 

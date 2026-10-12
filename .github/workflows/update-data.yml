@@ -1,8 +1,8 @@
-name: 每日自動更新資料庫
+name: 每週自動更新資料庫
 
 on:
   schedule:
-    - cron: "0 23 * * *" # 每日 23:00 UTC = 澳門時間早上 07:00
+    - cron: "0 23 * * 0" # 每週日 23:00 UTC = 澳門時間星期一早上 07:00
   workflow_dispatch:
 
 permissions:

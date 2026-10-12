@@ -404,8 +404,8 @@ def main():
         html = re.sub(r'const D=\[.*?\];', new_js, html, flags=re.DOTALL)
 
     html = re.sub(
-        r'資料庫更新日期：\d{4}-\d{2}-\d{2}',
-        f'資料庫更新日期：{today}',
+        r'(?:資料庫更新日期|上次更新日期)：\d{4}-\d{2}-\d{2}',
+        f'上次更新日期：{today}',
         html
     )
 
